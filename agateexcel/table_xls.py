@@ -8,7 +8,9 @@ import datetime
 from collections import OrderedDict
 
 import agate
+import io
 import six
+import sys
 import xlrd
 
 
@@ -29,11 +31,29 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
     if not isinstance(skip_lines, int):
         raise ValueError('skip_lines argument must be an int')
 
+    # Mute xlrd warnings for OLE inconsistencies
+    class LogFilter(io.TextIOWrapper):
+        def __init__(self, buffer=sys.stdout, *args, **kwargs):
+            super(LogFilter, self).__init__(buffer, *args, **kwargs)
+        def write(self, data):
+            if isinstance(data, str):
+                if not data.startswith("WARNING *** OLE2 inconsistency: "):
+                    super(LogFilter, self).write(data)
+            elif isinstance(data, bytes):
+                super(LogFilter, self).write(data.decode(self.buffer.encoding))
+            else:
+                print(data.__class__)
+                super(LogFilter, self).write(data)
+
+    def open_workbook(file_contents, encoding_override):
+        logfilter = LogFilter()
+        return xlrd.open_workbook(file_contents=file_contents, logfile=logfilter, encoding_override=encoding_override)
+
     if hasattr(path, 'read'):
-        book = xlrd.open_workbook(file_contents=path.read(), encoding_override=encoding_override)
+        book = open_workbook(file_contents=path.read(), encoding_override=encoding_override)
     else:
         with open(path, 'rb') as f:
-            book = xlrd.open_workbook(file_contents=f.read(), encoding_override=encoding_override)
+            book = open_workbook(file_contents=f.read(), encoding_override=encoding_override)
 
     multiple = agate.utils.issequence(sheet)
     if multiple:
