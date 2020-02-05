@@ -57,8 +57,11 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
                 super(LogFilter, self).write(data)
 
     def open_workbook(file_contents, encoding_override):
-        logfilter = LogFilter()
-        return xlrd.open_workbook(file_contents=file_contents, logfile=logfilter, encoding_override=encoding_override, on_demand=True)
+        if six.PY2:
+            return xlrd.open_workbook(file_contents=file_contents, encoding_override=encoding_override, on_demand=True)
+        else:
+            logfilter = LogFilter()
+            return xlrd.open_workbook(file_contents=file_contents, logfile=logfilter, encoding_override=encoding_override, on_demand=True)
 
     try:
        if hasattr(path, 'read'):
