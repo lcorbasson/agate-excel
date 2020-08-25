@@ -113,14 +113,16 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
                    rows.append([c[i] for c in columns])
 
            if column_names is None:
-               column_names = column_names_detected
+               sheet_column_names = column_names_detected
+           else:
+               sheet_column_names = column_names
 
-           if isinstance(column_types, dict) and column_names is not None:
-               column_types_detected = dict(zip(column_names, column_types))
-               column_types_detected.update(column_types)
-               column_types = column_types_detected
+           sheet_column_types = column_types
+           if isinstance(column_types, dict) and sheet_column_names is not None:
+               sheet_column_types = dict(zip(sheet_column_names, column_types_detected))
+               sheet_column_types.update(column_types)
 
-           tables[sheet.name] = agate.Table(rows, column_names, column_types, **kwargs)
+           tables[sheet.name] = agate.Table(rows, sheet_column_names, sheet_column_types, **kwargs)
 
     finally:
         book.release_resources()
