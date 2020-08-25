@@ -15,7 +15,7 @@ NULL_TIME = datetime.time(0, 0, 0)
 
 
 def from_xlsx(cls, path, sheet=None, skip_lines=0, header=True, read_only=True, 
-              reset_dimensions=False, row_limit=None, **kwargs):
+              reset_dimensions=False, row_limit=None, column_names=None, column_types=None, **kwargs):
     """
     Parse an XLSX file.
 
@@ -68,7 +68,7 @@ def from_xlsx(cls, path, sheet=None, skip_lines=0, header=True, read_only=True,
         else:
             sheet = book.active
 
-        column_names = None
+        column_names_detected = None
         offset = 0
         rows = []
 
@@ -77,7 +77,7 @@ def from_xlsx(cls, path, sheet=None, skip_lines=0, header=True, read_only=True,
 
         if header:
             sheet_header = sheet.iter_rows(min_row=1 + skip_lines, max_row=1 + skip_lines)
-            column_names = [None if c.value is None else six.text_type(c.value) for row in sheet_header for c in row]
+            column_names_detected = [None if c.value is None else six.text_type(c.value) for row in sheet_header for c in row]
             offset = 1
 
         if row_limit is None:
@@ -106,12 +106,12 @@ def from_xlsx(cls, path, sheet=None, skip_lines=0, header=True, read_only=True,
 
             rows.append(values)
 
-        if 'column_names' in kwargs:
-            if not header:
-                column_names = kwargs['column_names']
-            del kwargs['column_names']
+        if column_names is None:
+            sheet_column_names = column_names_detected
+        else:
+            sheet_column_names = column_names
 
-        tables[sheet.title] = agate.Table(rows, column_names, **kwargs)
+        tables[sheet.title] = agate.Table(rows, sheet_column_names, column_types, **kwargs)
 
     f.close()
 
