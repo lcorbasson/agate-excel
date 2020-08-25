@@ -28,6 +28,10 @@ class TestXLS(agate.AgateTestCase):
             agate.Date(), agate.DateTime(),
         ]
 
+        self.user_provided_column_types = {
+            'number': agate.Text(),
+        }
+
         self.table = agate.Table(self.rows, self.column_names, self.column_types)
 
     def test_from_xls_with_column_names(self):
@@ -36,6 +40,12 @@ class TestXLS(agate.AgateTestCase):
         self.assertColumnNames(table, self.user_provided_column_names)
         self.assertColumnTypes(table, [agate.Number, agate.Text, agate.Boolean, agate.Date, agate.DateTime])
         self.assertRows(table, [r.values() for r in self.table.rows])
+
+    def test_from_xls_with_column_types(self):
+        table = agate.Table.from_xls('examples/test.xls', column_types=self.user_provided_column_types)
+
+        self.assertColumnNames(table, self.column_names)
+        self.assertColumnTypes(table, [agate.Text, agate.Text, agate.Boolean, agate.Date, agate.DateTime])
 
     def test_from_xls(self):
         table = agate.Table.from_xls('examples/test.xls')

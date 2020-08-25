@@ -23,7 +23,8 @@ EXCEL_TO_AGATE_TYPE = {
 }
 
 
-def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override=None, row_limit=None, **kwargs):
+def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override=None,
+             row_limit=None, column_names=None, column_types=None, **kwargs):
     """
     Parse an XLS file.
 
@@ -38,6 +39,10 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
         If :code:`True`, the first row is assumed to contain column names.
     :param row_limit:
         Limit how many rows of data will be read
+    :param column_names:
+        See :meth:`.Table.__init__`.
+    :param column_types:
+        See :meth:`.Table.__init__`.
     """
     if not isinstance(skip_lines, int):
         raise ValueError('skip_lines argument must be an int')
@@ -67,13 +72,13 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
 
            if header:
                offset = 1
-               column_names = []
+               column_names_detected = []
            else:
                offset = 0
-               column_names = None
+               column_names_detected = None
 
            columns = []
-           column_types = []
+           column_types_detected = []
 
            for i in range(sheet.ncols):
                if row_limit is None:
@@ -96,10 +101,10 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
 
                if header:
                    name = six.text_type(sheet.cell_value(skip_lines, i)) or None
-                   column_names.append(name)
+                   column_names_detected.append(name)
 
                columns.append(values)
-               column_types.append(agate_type)
+               column_types_detected.append(agate_type)
 
            rows = []
 
@@ -107,14 +112,13 @@ def from_xls(cls, path, sheet=None, skip_lines=0, header=True, encoding_override
                for i in range(len(columns[0])):
                    rows.append([c[i] for c in columns])
 
-           if 'column_names' in kwargs:
-               if not header:
-                   column_names = kwargs['column_names']
-               del kwargs['column_names']
+           if column_names is None:
+               column_names = column_names_detected
 
-           if 'column_types' in kwargs:
-               column_types = kwargs['column_types']
-               del kwargs['column_types']
+           if isinstance(column_types, dict) and column_names is not None:
+               column_types_detected = dict(zip(column_names, column_types))
+               column_types_detected.update(column_types)
+               column_types = column_types_detected
 
            tables[sheet.name] = agate.Table(rows, column_names, column_types, **kwargs)
 
